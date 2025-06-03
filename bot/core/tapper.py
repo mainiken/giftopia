@@ -291,30 +291,60 @@ class TapperBot:
         mission_data = None
         if response and response.get('status') is True and response.get('data'):
             mission_data = response['data'].get('mission')
+
+        # Обработка миссий с подпиской (sequence 1 или наличие ссылок)
         if mission_data and (mission_data.get('sequence') == 1 or mission_data.get('channel_url') or mission_data.get('link') or mission_data.get('url')):
             await self._process_subscription_mission(mission_data)
-            if mission_data.get('status') == 'COMPLETED' and mission_data.get('expiresAt'):
-                sleep_duration = self._get_sleep_duration_from_expires(mission_data.get('expiresAt'))
-                if sleep_duration and sleep_duration > 60:
-                    extra_delay = random.randint(1800, 7200)
-                    total_sleep = sleep_duration + extra_delay
-                    hours, remainder = divmod(total_sleep, 3600)
-                    minutes, seconds = divmod(remainder, 60)
-                    self._log('info', f'Сессия засыпает на ⌚<g> {int(hours)}ч {int(minutes)}м {int(seconds)}с </g> до следующей миссии.', 'sleep')
-                    await asyncio.sleep(total_sleep)
-                    self._log('info', 'Сессия проснулась.', 'sleep')
-                    return
-        else:
+            # После выполнения подписки, проверяем статус для определения времени следующей миссии
             sleep_duration = await self._check_mission_status()
             if sleep_duration is not None and sleep_duration > 60:
-                extra_delay = random.randint(1800, 7200)
+                extra_delay = random.randint(1800, 7200) # Добавляем случайную задержку
                 total_sleep = sleep_duration + extra_delay
                 hours, remainder = divmod(total_sleep, 3600)
                 minutes, seconds = divmod(remainder, 60)
                 self._log('info', f'Сессия засыпает на ⌚<g> {int(hours)}ч {int(minutes)}м {int(seconds)}с </g> до следующей миссии.', 'sleep')
                 await asyncio.sleep(total_sleep)
                 self._log('info', 'Сессия проснулась.', 'sleep')
-                return
+                return # Завершаем текущий цикл, чтобы начать новый после сна
+
+        # Обработка миссии sequence 2
+        elif mission_data and mission_data.get('missionType') == 2 and mission_data.get('status') != 'COMPLETED':
+            self._log('info', f'Обнаружена миссия missionType 2, статус: {mission_data.get("status")}. Пытаюсь завершить...', 'mission')
+            completed = await self.complete_mission(completed=True)
+            if completed:
+                self._log('success', 'Миссия missionType 2 успешно завершена.', 'success')
+            else:
+                self._log('error', 'Не удалось завершить миссию missionType 2.', 'error')
+
+            # Добавляем небольшую паузу перед повторной проверкой статуса после попытки завершения
+            await asyncio.sleep(random.uniform(10, 30))
+
+            # После попытки завершения, проверяем статус снова для определения времени следующей миссии
+            sleep_duration = await self._check_mission_status()
+            if sleep_duration is not None and sleep_duration > 60:
+                extra_delay = random.randint(1800, 7200) # Добавляем случайную задержку
+                total_sleep = sleep_duration + extra_delay
+                hours, remainder = divmod(total_sleep, 3600)
+                minutes, seconds = divmod(remainder, 60)
+                self._log('info', f'Сессия засыпает на ⌚<g> {int(hours)}ч {int(minutes)}м {int(seconds)}с </g> до следующей миссии.', 'sleep')
+                await asyncio.sleep(total_sleep)
+                self._log('info', 'Сессия проснулась.', 'sleep')
+                return # Завершаем текущий цикл, чтобы начать новый после сна
+
+        # Если миссия не требует специфической обработки или уже выполнена, проверяем статус для следующей
+        else:
+            sleep_duration = await self._check_mission_status()
+            if sleep_duration is not None and sleep_duration > 60:
+                extra_delay = random.randint(1800, 7200) # Добавляем случайную задержку
+                total_sleep = sleep_duration + extra_delay
+                hours, remainder = divmod(total_sleep, 3600)
+                minutes, seconds = divmod(remainder, 60)
+                self._log('info', f'Сессия засыпает на ⌚<g> {int(hours)}ч {int(minutes)}м {int(seconds)}с </g> до следующей миссии.', 'sleep')
+                await asyncio.sleep(total_sleep)
+                self._log('info', 'Сессия проснулась.', 'sleep')
+                return # Завершаем текущий цикл, чтобы начать новый после сна
+
+        # Стандартная пауза, если ни один из сценариев сна не был активирован
         self._log('debug', 'Стандартная пауза перед следующим циклом.', 'sleep')
         await asyncio.sleep(uniform(settings.SLEEP_MIN, settings.SLEEP_MAX))
 
@@ -356,7 +386,7 @@ class TapperBot:
             return False
 
     async def _check_mission_status(self) -> Optional[int]:
-        if not self._http_client or self._http_client.closed or not self._access_token:
+        if not self._http_client or self._http_client.closed or not self._auth_token:
             self._log('warning', 'HTTP client не инициализирован, закрыт или отсутствует access_token.', 'warning')
             return None
         sleep_duration_seconds = None
