@@ -445,7 +445,7 @@ class TapperBot:
                     first_name = user_data.get('firstName')
                     balance = user_data.get('balance')
                     display_name = username if username else first_name
-                    self._log('success', f'Пользователь: {display_name}, Баланс: {balance}', 'balance')
+                    self._log('success', f'Сессия: {display_name}, Баланс: {balance}', 'balance')
                 else:
                     self._log('warning', f'В ответе нет данных пользователя: {response}', 'warning')
             else:
