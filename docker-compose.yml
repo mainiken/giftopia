@@ -1,6 +1,6 @@
 services:
   bot:
-    container_name: 'BITAPP'
+    container_name: 'Giftopia'
     build:
       context: .
     stop_signal: SIGINT

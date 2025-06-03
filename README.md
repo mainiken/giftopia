@@ -1,6 +1,6 @@
-# Bot Bot
+# GifTopia Bot
 
-[🇷🇺 Русский](README-RU.md) | [🇬🇧 English](README.md)
+[🇷🇺 Russian](README-RU.md) | [🇬🇧 English](README.md)
 
 [<img src="https://res.cloudinary.com/dkgz59pmw/image/upload/v1736756459/knpk224-28px-market_ksivis.svg" alt="Market Link" width="200">](https://t.me/MaineMarketBot?start=8HVF7S9K)
 [<img src="https://res.cloudinary.com/dkgz59pmw/image/upload/v1736756459/knpk224-28px-channel_psjoqn.svg" alt="Channel Link" width="200">](https://t.me/+vpXdTJ_S3mo0ZjIy)
@@ -21,7 +21,7 @@
 ---
 
 ## 📜 Description
-**NAME** is an automated bot for the BITApp game. Supports multithreading, proxy integration, and automatic game management.
+**GifTopia Bot** is an automated bot for the [GifTopia](https://t.me/giftopia_gamebot/start?startapp=252453226) game. It supports multithreading, proxy integration, and automatic game management.
 
 ---
 
@@ -38,27 +38,29 @@
 ### Quick Start
 1. **Download the project:**
    ```bash
-   git clone https://github.com/Mffff4/REPNAME.git
-   cd REPNAME
+   git clone https://github.com/mainiken/giftopia.git
+   cd giftopia
    ```
 
-2. **Install dependencies:**
-   - **Windows**:
-     ```bash
-     run.bat
-     ```
-   - **Linux**:
-     ```bash
-     run.sh
-     ```
-
-3. **Get API keys:**
-   - Go to [my.telegram.org](https://my.telegram.org) and get your `API_ID` and `API_HASH`
-   - Add this information to the `.env` file
-
-4. **Run the bot:**
+2. **Install the uv package manager:**
    ```bash
-   python3 main.py --action 3  # Run the bot
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
+
+3. **Install dependencies using uv:**
+   ```bash
+   uv pip install -r requirements.txt
+   ```
+
+4. **Configure parameters in the `.env` file:**
+   ```bash
+   API_ID=your_api_id
+   API_HASH=your_api_hash
+   ```
+
+5. **Run the bot:**
+   ```bash
+   uv run main.py -a 1
    ```
 
 ### Manual Installation
@@ -67,19 +69,19 @@
    sudo sh install.sh
    python3 -m venv venv
    source venv/bin/activate
-   pip3 install -r requirements.txt
+   uv pip install -r requirements.txt
    cp .env-example .env
-   nano .env  # Add your API_ID and API_HASH
-   python3 main.py
+   nano .env  # Specify your API_ID and API_HASH
+   uv run main.py
    ```
 
 2. **Windows:**
    ```bash
    python -m venv venv
    venv\Scripts\activate
-   pip install -r requirements.txt
+   uv pip install -r requirements.txt
    copy .env-example .env
-   python main.py
+   uv run main.py
    ```
 
 ---
@@ -92,35 +94,30 @@
 | **API_HASH**              |                      | Telegram API application hash                               |
 | **GLOBAL_CONFIG_PATH**    |                      | Path for configuration files. By default, uses the TG_FARM environment variable |
 | **FIX_CERT**              | False                | Fix SSL certificate errors                                  |
-| **SESSION_START_DELAY**   | 360                  | Delay before starting the session (seconds)               |
+| **SESSION_START_DELAY**   | 360                  | Delay before starting the session (seconds)                 |
 | **REF_ID**                |                      | Referral ID for new accounts                                |
-| **USE_PROXY**             | True                 | Use proxy                                                  |
+| **USE_PROXY**             | True                 | Use proxy                                                   |
 | **SESSIONS_PER_PROXY**    | 1                    | Number of sessions per proxy                                |
 | **DISABLE_PROXY_REPLACE** | False                | Disable proxy replacement on errors                         |
-| **BLACKLISTED_SESSIONS**  | ""                   | Sessions that will not be used (comma-separated)           |
+| **BLACKLISTED_SESSIONS**  | ""                   | Sessions that will not be used (comma-separated)            |
 | **DEBUG_LOGGING**         | False                | Enable detailed logging                                     |
-| **DEVICE_PARAMS**         | False                | Use custom device parameters                                 |
+| **DEVICE_PARAMS**         | False                | Use custom device parameters                                |
 | **AUTO_UPDATE**           | True                 | Automatic updates                                           |
-| **CHECK_UPDATE_INTERVAL** | 300                  | Update check interval (seconds)                            |
+| **CHECK_UPDATE_INTERVAL** | 300                  | Update check interval (seconds)                             |
 
+---
 
 ## 💰 Support and Donations
 
-Support development using cryptocurrencies:
+Support the development:
 
-| Currency              | Wallet Address                                                                     |
-|----------------------|------------------------------------------------------------------------------------|
-| Bitcoin (BTC)        |bc1qt84nyhuzcnkh2qpva93jdqa20hp49edcl94nf6| 
-| Ethereum (ETH)       |0xc935e81045CAbE0B8380A284Ed93060dA212fa83| 
-| TON                  |UQBlvCgM84ijBQn0-PVP3On0fFVWds5SOHilxbe33EDQgryz|
-| Binance Coin         |0xc935e81045CAbE0B8380A284Ed93060dA212fa83| 
-| Solana (SOL)         |3vVxkGKasJWCgoamdJiRPy6is4di72xR98CDj2UdS1BE| 
-| Ripple (XRP)         |rPJzfBcU6B8SYU5M8h36zuPcLCgRcpKNB4| 
-| Dogecoin (DOGE)      |DST5W1c4FFzHVhruVsa2zE6jh5dznLDkmW| 
-| Polkadot (DOT)       |1US84xhUghAhrMtw2bcZh9CXN3i7T1VJB2Gdjy9hNjR3K71| 
-| Litecoin (LTC)       |ltc1qcg8qesg8j4wvk9m7e74pm7aanl34y7q9rutvwu| 
-| Matic                |0xc935e81045CAbE0B8380A284Ed93060dA212fa83| 
-| Tron (TRX)           |TQkDWCjchCLhNsGwr4YocUHEeezsB4jVo5| 
+| Currency      | Address |
+|---------------|---------|
+| **Bitcoin**   | `bc1pfuhstqcwwzmx4y9jx227vxcamldyx233tuwjy639fyspdrug9jjqer6aqe` |
+| **Ethereum**  | `0x9c7ee1199f3fe431e45d9b1ea26c136bd79d8b54` |
+| **TON**       | `UQBpZGp55xrezubdsUwuhLFvyqy6gldeo-h22OkDk006e1CL` |
+| **BNB**       | `0x9c7ee1199f3fe431e45d9b1ea26c136bd79d8b54` |
+| **Solana**    | `HXjHPdJXyyddd7KAVrmDg4o8pRL8duVRMCJJF2xU8JbK` |
 
 ---
 
