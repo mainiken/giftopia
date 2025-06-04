@@ -353,10 +353,10 @@ class TapperBot:
             pass
         return None
 
-    async def complete_mission(self, completed: bool = True) -> bool:
+    async def complete_mission(self, completed: bool = True) -> Optional[Dict]:
         if self._http_client is None or self._http_client.closed:
             self._log('warning', 'HTTP client is not initialized or closed.', 'warning')
-            return False
+            return None
         try:
             headers = self._get_headers()
             data = {"completed": completed}
@@ -370,14 +370,13 @@ class TapperBot:
             )
             if response and response.get('status') is True:
                 self._log('success', f'Mission completion request successful: {response.get("data")}', 'success')
-                return True
             else:
                 self._log('error', f'Mission completion request failed: {response}', 'error')
-                return False
+            return response
         except Exception as e:
             self._log('error', f'Error completing mission: {str(e)}', 'error')
             self._log('debug', traceback.format_exc(), 'debug')
-            return False
+            return None
 
     async def _check_mission_status(self) -> Optional[int]:
         if not self._http_client or self._http_client.closed or not self._auth_token:
