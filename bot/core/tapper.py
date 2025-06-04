@@ -281,72 +281,66 @@ class TapperBot:
             await asyncio.sleep(60)
             return
         await self._get_user_data()
-        headers = self._get_headers()
-        response = await self.make_request(
-            'GET',
-            f"{self.BASE_URL}/api/missions/user",
-            headers=headers,
-            cookies=self._get_cookies()
-        )
-        mission_data = None
-        if response and response.get('status') is True and response.get('data'):
-            mission_data = response['data'].get('mission')
 
-        # Обработка миссий с подпиской (sequence 1 или наличие ссылок)
-        if mission_data and (mission_data.get('sequence') == 1 or mission_data.get('channel_url') or mission_data.get('link') or mission_data.get('url')):
-            await self._process_subscription_mission(mission_data)
-            # После выполнения подписки, проверяем статус для определения времени следующей миссии
-            sleep_duration = await self._check_mission_status()
-            if sleep_duration is not None and sleep_duration > 60:
-                extra_delay = random.randint(1800, 7200) # Добавляем случайную задержку
-                total_sleep = sleep_duration + extra_delay
-                hours, remainder = divmod(total_sleep, 3600)
-                minutes, seconds = divmod(remainder, 60)
-                self._log('info', f'Сессия засыпает на ⌚<g> {int(hours)}ч {int(minutes)}м {int(seconds)}с </g> до следующей миссии.', 'sleep')
-                await asyncio.sleep(total_sleep)
-                self._log('info', 'Сессия проснулась.', 'sleep')
-                return # Завершаем текущий цикл, чтобы начать новый после сна
+        # Попытка подтвердить миссию сразу
+        self._log('info', 'Попытка подтвердить текущую миссию...', 'mission')
+        completed_attempt_response = await self.complete_mission(completed=True)
 
-        # Обработка миссии sequence 2
-        elif mission_data and mission_data.get('missionType') == 2 and mission_data.get('status') != 'COMPLETED':
-            self._log('info', f'Обнаружена миссия missionType 2, статус: {mission_data.get("status")}. Пытаюсь завершить...', 'mission')
-            completed = await self.complete_mission(completed=True)
-            if completed:
-                self._log('success', 'Миссия missionType 2 успешно завершена.', 'success')
+        mission_data_after_attempt = None
+        if completed_attempt_response and completed_attempt_response.get('status') is True and completed_attempt_response.get('data'):
+            mission_data_after_attempt = completed_attempt_response['data'].get('mission')
+            if mission_data_after_attempt:
+                status_after_attempt = mission_data_after_attempt.get('status')
+                self._log('info', f'Статус миссии после попытки подтверждения: {status_after_attempt}', 'mission')
+
+                # Если миссия завершена после первой попытки
+                if status_after_attempt == 'COMPLETED':
+                    self._log('success', 'Миссия успешно подтверждена.', 'success')
+                # Если миссия активна и требует подписки (sequence 1 или наличие ссылок)
+                elif status_after_attempt == 'ACTIVE' and (mission_data_after_attempt.get('sequence') == 1 or mission_data_after_attempt.get('channel_url') or mission_data_after_attempt.get('link') or mission_data_after_attempt.get('url')):
+                    self._log('info', 'Миссия активна и требует подписки. Выполняю подписку...', 'mission')
+                    await self._process_subscription_mission(mission_data_after_attempt)
+                    # После подписки, попытка подтвердить миссию снова
+                    self._log('info', 'Попытка подтвердить миссию после подписки...', 'mission')
+                    completed_after_sub_response = await self.complete_mission(completed=True)
+                    if completed_after_sub_response and completed_after_sub_response.get('status') is True and completed_after_sub_response.get('data'):
+                         mission_data_after_sub = completed_after_sub_response['data'].get('mission')
+                         if mission_data_after_sub and mission_data_after_sub.get('status') == 'COMPLETED':
+                             self._log('success', 'Миссия успешно подтверждена после подписки.', 'success')
+                         else:
+                             self._log('error', 'Не удалось подтвердить миссию после подписки.', 'error')
+                    else:
+                         self._log('error', 'Не удалось получить ответ после попытки подтверждения миссии после подписки.', 'error')
+                # Обработка миссии sequence 2, если она еще активна
+                elif mission_data_after_attempt.get('missionType') == 2 and status_after_attempt != 'COMPLETED':
+                     self._log('info', f'Миссия missionType 2, статус: {status_after_attempt}. Пытаюсь завершить...', 'mission')
+                     # Мы уже пытались завершить ее первой попыткой complete_mission(completed=True),
+                     # так что если она еще не COMPLETED, возможно, есть проблема или нужно подождать.
+                     # Добавляем небольшую паузу перед проверкой статуса.
+                     self._log('info', 'Ожидание перед повторной проверкой статуса миссии missionType 2.', 'sleep')
+                     await asyncio.sleep(random.uniform(10, 30))
+
             else:
-                self._log('error', 'Не удалось завершить миссию missionType 2.', 'error')
-
-            # Добавляем небольшую паузу перед повторной проверкой статуса после попытки завершения
-            await asyncio.sleep(random.uniform(10, 30))
-
-            # После попытки завершения, проверяем статус снова для определения времени следующей миссии
-            sleep_duration = await self._check_mission_status()
-            if sleep_duration is not None and sleep_duration > 60:
-                extra_delay = random.randint(1800, 7200) # Добавляем случайную задержку
-                total_sleep = sleep_duration + extra_delay
-                hours, remainder = divmod(total_sleep, 3600)
-                minutes, seconds = divmod(remainder, 60)
-                self._log('info', f'Сессия засыпает на ⌚<g> {int(hours)}ч {int(minutes)}м {int(seconds)}с </g> до следующей миссии.', 'sleep')
-                await asyncio.sleep(total_sleep)
-                self._log('info', 'Сессия проснулась.', 'sleep')
-                return # Завершаем текущий цикл, чтобы начать новый после сна
-
-        # Если миссия не требует специфической обработки или уже выполнена, проверяем статус для следующей
+                self._log('warning', 'В ответе после попытки подтверждения нет данных о миссии.', 'warning')
         else:
-            sleep_duration = await self._check_mission_status()
-            if sleep_duration is not None and sleep_duration > 60:
-                extra_delay = random.randint(1800, 7200) # Добавляем случайную задержку
-                total_sleep = sleep_duration + extra_delay
-                hours, remainder = divmod(total_sleep, 3600)
-                minutes, seconds = divmod(remainder, 60)
-                self._log('info', f'Сессия засыпает на ⌚<g> {int(hours)}ч {int(minutes)}м {int(seconds)}с </g> до следующей миссии.', 'sleep')
-                await asyncio.sleep(total_sleep)
-                self._log('info', 'Сессия проснулась.', 'sleep')
-                return # Завершаем текущий цикл, чтобы начать новый после сна
+            self._log('error', 'Ошибка или некорректный ответ при попытке подтверждения миссии.', 'error')
 
-        # Стандартная пауза, если ни один из сценариев сна не был активирован
-        self._log('debug', 'Стандартная пауза перед следующим циклом.', 'sleep')
-        await asyncio.sleep(uniform(settings.SLEEP_MIN, settings.SLEEP_MAX))
+        # Проверяем статус миссии для определения времени следующей
+        # Используем _check_mission_status, который сам делает запрос и парсит время
+        sleep_duration = await self._check_mission_status()
+
+        if sleep_duration is not None and sleep_duration > 60:
+            extra_delay = random.randint(settings.SLEEP_MIN, settings.SLEEP_MAX) # Используем стандартные настройки задержки
+            total_sleep = sleep_duration + extra_delay
+            hours, remainder = divmod(total_sleep, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            self._log('info', f'Сессия засыпает на ⌚<g> {int(hours)}ч {int(minutes)}м {int(seconds)}с </g> до следующей миссии.', 'sleep')
+            await asyncio.sleep(total_sleep)
+            self._log('info', 'Сессия проснулась.', 'sleep')
+        else:
+            # Стандартная пауза, если время следующей миссии не определено или очень мало
+            self._log('debug', 'Стандартная пауза перед следующим циклом.', 'sleep')
+            await asyncio.sleep(uniform(settings.SLEEP_MIN, settings.SLEEP_MAX))
 
     def _get_sleep_duration_from_expires(self, expires_at_str: str) -> Optional[int]:
         try:
