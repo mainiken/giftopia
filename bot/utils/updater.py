@@ -81,7 +81,7 @@ class UpdateManager:
 
     async def check_for_updates(self) -> bool:
         try:
-            subprocess.run(["git", "fetch"], check=True, capture_output=True)
+            subprocess.run(["git", "fetch"], check=True, capture_output=True, timeout=60)
             result = subprocess.run(
                 ["git", "status", "-uno"],
                 capture_output=True,
@@ -89,6 +89,9 @@ class UpdateManager:
                 check=True
             )
             return "Your branch is behind" in result.stdout
+        except subprocess.TimeoutExpired:
+            logger.warning("Git fetch timed out")
+            return False
         except subprocess.CalledProcessError as e:
             logger.error(f"Error checking updates: {e}")
             return False
